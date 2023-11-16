@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-quit-speedrun",
-  "description": "最速退群排行榜",
+  "description": "最速退群排行榜，不支持adapter-red",
   "version": "0.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
