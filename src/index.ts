@@ -1,4 +1,4 @@
-import { Context, Schema } from 'koishi'
+import { Context, Schema, h } from 'koishi'
 
 export const name = 'quit-speedrun'
 
@@ -56,6 +56,7 @@ export function apply(ctx: Context) {
       for (let i of data) {
         result += `${i.userName}(${i.userId.slice(0, 2)}***${i.userId.slice(-2)})\n退群耗时：${msToTime(i.usedTime)}\n\n`
       }
+      return h.quote(session.event.message.id) + result
     })
 }
 
