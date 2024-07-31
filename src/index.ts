@@ -2,6 +2,8 @@ import { Context, Schema, h } from 'koishi'
 
 export const name = 'quit-speedrun'
 
+export const usage = "更新日志：https://forum.koishi.xyz/t/topic/5904"
+
 export const inject = ["database"]
 
 export interface Config {}
@@ -9,12 +11,14 @@ export interface Config {}
 export const Config: Schema<Config> = Schema.object({})
 
 export interface SpeedrunData {
+  guildId: string,
   userId: string,
   userName: string,
   addedTime: number,
 }
 
 export interface speedrunRank {
+  guildId: string,
   userId: string,
   userName: string,
   usedTime: number,
@@ -30,16 +34,34 @@ declare module 'koishi' {
 export function apply(ctx: Context) {
   extendTables(ctx)
   ctx.on("guild-member-added", async (session) => {
-    let data = await ctx.database.get("speedrunData", {userId: session.event.user.id})
+    let data = await ctx.database.get("speedrunData", {
+      guildId: session.guildId,
+      userId: session.event.user.id
+    })
+
     if (data.length === 0) {
-      await ctx.database.create("speedrunData", {userId: session.event.user.id, userName: session.username, addedTime: Date.now()})
+      await ctx.database.create("speedrunData", {
+        guildId: session.guildId, 
+        userId: session.event.user.id, 
+        userName: session.username, 
+        addedTime: Date.now()
+      })
     }
   })
 
   ctx.on("guild-member-removed", async (session) => {
-    let data = await ctx.database.get("speedrunData", {userId: session.event.user.id})
+    let data = await ctx.database.get("speedrunData", {
+      guildId: session.guildId, 
+      userId: session.event.user.id
+    })
+
     if (data.length !== 0) {
-      await ctx.database.create("speedrunRank", {userId: session.event.user.id, userName: session.username, usedTime: Date.now() - data[0].addedTime})
+      await ctx.database.create("speedrunRank", {
+        guildId: session.guildId, 
+        userId: session.event.user.id, 
+        userName: session.username, 
+        usedTime: Date.now() - data[0].addedTime
+      })
     }
   })
 
@@ -48,6 +70,7 @@ export function apply(ctx: Context) {
     .action(async ({session}, page) => {
       let data = await ctx.database
         .select("speedrunRank")
+        .where({guildId: session.guildId})
         .orderBy("usedTime", "asc")
         .limit(5)
         .offset((page - 1) * 5)
@@ -62,12 +85,14 @@ export function apply(ctx: Context) {
 
 function extendTables(ctx: Context) {
   ctx.model.extend("speedrunData", {
+    guildId: "string",
     userId: "text",
     userName: "text",
     addedTime: "unsigned",
   }, {primary: "userId", autoInc: false})
 
   ctx.model.extend("speedrunRank", {
+    guildId: "string",
     userId: "text",
     userName: "text",
     usedTime: "unsigned",
