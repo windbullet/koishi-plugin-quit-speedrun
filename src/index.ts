@@ -1,4 +1,4 @@
-import { Context, Schema, h } from 'koishi'
+import { Context, Database, Schema, h } from 'koishi'
 
 export const name = 'quit-speedrun'
 
@@ -10,14 +10,16 @@ export interface Config {}
 
 export const Config: Schema<Config> = Schema.object({})
 
-export interface SpeedrunData {
+export interface SpeedrunData2 {
+  id: number,
   guildId: string,
   userId: string,
   userName: string,
   addedTime: number,
 }
 
-export interface speedrunRank {
+export interface SpeedrunRank2 {
+  id: number,
   guildId: string,
   userId: string,
   userName: string,
@@ -26,21 +28,21 @@ export interface speedrunRank {
 
 declare module 'koishi' {
   interface Tables {
-    speedrunData: SpeedrunData
-    speedrunRank: speedrunRank
+    speedrunData2: SpeedrunData2
+    speedrunRank2: SpeedrunRank2
   }
 }
 
 export function apply(ctx: Context) {
   extendTables(ctx)
   ctx.on("guild-member-added", async (session) => {
-    let data = await ctx.database.get("speedrunData", {
+    let data = await ctx.database.get("speedrunData2", {
       guildId: session.guildId,
       userId: session.event.user.id
     })
 
     if (data.length === 0) {
-      await ctx.database.create("speedrunData", {
+      await ctx.database.create("speedrunData2", {
         guildId: session.guildId, 
         userId: session.event.user.id, 
         userName: session.username, 
@@ -50,13 +52,13 @@ export function apply(ctx: Context) {
   })
 
   ctx.on("guild-member-removed", async (session) => {
-    let data = await ctx.database.get("speedrunData", {
+    let data = await ctx.database.get("speedrunData2", {
       guildId: session.guildId, 
       userId: session.event.user.id
     })
 
     if (data.length !== 0) {
-      await ctx.database.create("speedrunRank", {
+      await ctx.database.create("speedrunRank2", {
         guildId: session.guildId, 
         userId: session.event.user.id, 
         userName: session.username, 
@@ -69,7 +71,7 @@ export function apply(ctx: Context) {
     .usage("可指定页数，默认为第一页，每页显示五人")
     .action(async ({session}, page) => {
       let data = await ctx.database
-        .select("speedrunRank")
+        .select("speedrunRank2")
         .where({guildId: session.guildId})
         .orderBy("usedTime", "asc")
         .limit(5)
@@ -84,19 +86,21 @@ export function apply(ctx: Context) {
 }
 
 function extendTables(ctx: Context) {
-  ctx.model.extend("speedrunData", {
+  ctx.model.extend("speedrunData2", {
+    id: "unsigned",
     guildId: "string",
     userId: "text",
     userName: "text",
     addedTime: "unsigned",
-  }, {primary: "userId", autoInc: false})
+  }, {primary: "id", autoInc: true})
 
-  ctx.model.extend("speedrunRank", {
+  ctx.model.extend("speedrunRank2", {
+    id: "unsigned",
     guildId: "string",
     userId: "text",
     userName: "text",
     usedTime: "unsigned",
-  }, {primary: "userId", autoInc: false})
+  })
 }
 
 function msToTime(ms) {
